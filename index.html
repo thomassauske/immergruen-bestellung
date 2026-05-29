@@ -120,6 +120,7 @@ header h1{font-size:1.1rem;font-weight:800;letter-spacing:.3px;}
 <div class="sum-section" id="sum-section">
   <div id="sum-content"></div>
   <div class="btn-row"><button class="btn btn-g" onclick="copyOrder()">📋 Bestellung kopieren</button></div>
+  <div class="btn-row"><button class="btn btn-gray" onclick="exportSoll()">📤 Soll-Werte exportieren</button></div>
   <div class="btn-row">
     <button class="btn btn-gray" onclick="resetLager()">Lager zurücksetzen</button>
     <button class="btn btn-red" onclick="resetAll()">Alles löschen</button>
@@ -551,6 +552,35 @@ function copyOrder() {
     ta.value = txt; document.body.appendChild(ta); ta.select();
     document.execCommand('copy'); document.body.removeChild(ta);
     toast('✓ Kopiert!');
+  }
+}
+
+function exportSoll() {
+  var lines = ['SOLL-WERTE IMMERGRÜN'];
+  var d = new Date();
+  lines.push(d.toLocaleDateString('de-DE'));
+  lines.push('─────────────────────────────────────');
+  var hasAny = false;
+  KATEGORIEN.filter(function(k){ return k.id !== 'summary'; }).forEach(function(k) {
+    var arts = appState.artikel.filter(function(a){ return a.kat === k.id; });
+    var withSoll = arts.filter(function(a){ return getOrder(a.id).soll !== null; });
+    if (!withSoll.length) return;
+    hasAny = true;
+    lines.push('');
+    lines.push(k.name.replace(/[^\w äöüÄÖÜß]/g,'').trim().toUpperCase());
+    withSoll.forEach(function(a) {
+      lines.push('  ' + a.name + ' → ' + getOrder(a.id).soll + ' ' + a.be);
+    });
+  });
+  if (!hasAny) { toast('Noch keine Soll-Werte eingetragen'); return; }
+  var txt = lines.join('\n');
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(txt).then(function(){ toast('✓ Soll-Werte kopiert!'); });
+  } else {
+    var ta = document.createElement('textarea');
+    ta.value = txt; document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta);
+    toast('✓ Soll-Werte kopiert!');
   }
 }
 
