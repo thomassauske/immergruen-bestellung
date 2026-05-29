@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Immergrün · Bestellung</title>
+<style>
+:root {
+  --gruen:#2d6a4f; --gruen2:#40916c; --gruen-bg:#d8f3dc;
+  --grau:#f5f5f3; --dunkel:#1a1a1a; --rot:#c1121f;
+  --orange:#e07a00; --weiss:#fff; --r:10px;
+  --shadow:0 2px 8px rgba(0,0,0,0.09);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#eef2ef;color:var(--dunkel);min-height:100vh;padding-bottom:80px;}
+
+/* HEADER */
+header{background:var(--gruen);color:#fff;padding:14px 16px 12px;position:sticky;top:0;z-index:200;box-shadow:0 2px 10px rgba(0,0,0,.18);}
+header h1{font-size:1.1rem;font-weight:800;letter-spacing:.3px;}
+.meta{font-size:.72rem;opacity:.8;margin-top:2px;}
+
+/* TABS */
+.tabs{display:flex;background:#fff;border-bottom:2px solid #e0ebe3;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;position:sticky;top:52px;z-index:100;}
+.tabs::-webkit-scrollbar{display:none;}
+.tab{padding:10px 14px;font-size:.77rem;font-weight:700;color:#888;cursor:pointer;white-space:nowrap;border:none;border-bottom:2.5px solid transparent;background:none;margin-bottom:-2px;transition:all .15s;-webkit-tap-highlight-color:transparent;user-select:none;font-family:inherit;}
+.tab.active{color:var(--gruen);border-bottom-color:var(--gruen);}
+.tab .badge{display:inline-flex;align-items:center;justify-content:center;background:var(--gruen);color:#fff;border-radius:8px;font-size:.65rem;font-weight:800;min-width:18px;height:18px;padding:0 4px;margin-left:5px;vertical-align:middle;}
+
+/* SECTION */
+.section{display:none;padding:10px 10px 0;}
+.section.active{display:block;}
+
+/* ARTICLE CARD */
+.card{background:#fff;border-radius:var(--r);box-shadow:var(--shadow);margin-bottom:9px;overflow:visible;}
+.card-head{display:flex;align-items:center;padding:12px 12px;gap:10px;width:100%;background:none;border:none;border-radius:var(--r) var(--r) 0 0;text-align:left;cursor:pointer;-webkit-tap-highlight-color:transparent;font-family:inherit;}
+.card:not(.open) .card-head{border-radius:var(--r);}
+.card-name{flex:1;min-width:0;}
+.card-name .name{font-size:.88rem;font-weight:700;line-height:1.3;color:var(--dunkel);}
+.card-name .sub{font-size:.68rem;color:#aaa;margin-top:1px;}
+.order-pill{min-width:38px;height:38px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1.05rem;flex-shrink:0;}
+.pill-none{background:#eee;color:#bbb;}
+.pill-ok{background:var(--gruen-bg);color:var(--gruen);}
+.pill-warn{background:#fff3cd;color:var(--orange);}
+.chevron{width:16px;height:16px;flex-shrink:0;color:#ccc;transition:transform .2s;}
+.card.open .chevron{transform:rotate(180deg);color:var(--gruen);}
+
+/* EDIT PANEL */
+.card-body{display:none;padding:0 12px 13px;border-top:1px solid #f2f2f2;padding-top:12px;}
+.card.open .card-body{display:block;}
+
+.row{display:flex;align-items:center;gap:8px;margin-bottom:9px;}
+.lbl{font-size:.75rem;color:#777;width:48px;flex-shrink:0;}
+.inp{flex:1;height:42px;border:1.5px solid #ddd;border-radius:8px;padding:0 11px;font-size:1rem;font-weight:700;color:var(--dunkel);-webkit-appearance:none;outline:none;transition:border-color .15s;}
+.inp:focus{border-color:var(--gruen);}
+.hint{font-size:.68rem;color:#bbb;margin:-5px 0 8px 56px;}
+.leer-btn{height:42px;padding:0 12px;border:1.5px solid #fcc;background:#fff5f5;color:var(--rot);border-radius:8px;font-size:.78rem;font-weight:700;cursor:pointer;flex-shrink:0;-webkit-tap-highlight-color:transparent;}
+
+/* RESULT BOX */
+.result-box{background:#f7f7f5;border-radius:8px;padding:10px 12px;display:flex;justify-content:space-between;align-items:center;margin-top:3px;}
+.result-left .rl{font-size:.75rem;color:#888;}
+.result-left .re{font-size:.68rem;color:#bbb;}
+.result-num{font-size:1.4rem;font-weight:900;color:var(--gruen);}
+.result-num.zero{color:#ccc;}
+
+/* EINHEIT PICKER */
+.einheit-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:11px;}
+.e-btn{padding:5px 10px;border-radius:6px;border:1.5px solid #ddd;background:#fff;font-size:.75rem;font-weight:600;color:#666;cursor:pointer;-webkit-tap-highlight-color:transparent;}
+.e-btn.active{border-color:var(--gruen);background:var(--gruen-bg);color:var(--gruen);}
+.e-custom{flex:1;min-width:80px;height:34px;border:1.5px solid #ddd;border-radius:6px;padding:0 8px;font-size:.8rem;outline:none;}
+.e-custom:focus{border-color:var(--gruen);}
+
+/* EDIT MENU BUTTON */
+.edit-btn{background:none;border:none;cursor:pointer;padding:4px 6px;color:#ccc;font-size:1.1rem;flex-shrink:0;-webkit-tap-highlight-color:transparent;}
+.edit-btn:active{color:var(--gruen);}
+
+/* MODAL */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:500;display:none;align-items:flex-end;}
+.modal-bg.show{display:flex;}
+.modal{background:#fff;border-radius:18px 18px 0 0;width:100%;max-width:500px;margin:0 auto;padding:20px 16px 32px;max-height:85vh;overflow-y:auto;}
+.modal h3{font-size:1rem;font-weight:800;margin-bottom:16px;}
+.modal-section{margin-bottom:18px;}
+.modal-section label{font-size:.78rem;color:#888;display:block;margin-bottom:8px;font-weight:600;}
+.kat-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.kat-btn{padding:10px 12px;border:2px solid #eee;border-radius:8px;background:#fff;font-size:.8rem;font-weight:600;color:#555;cursor:pointer;text-align:left;-webkit-tap-highlight-color:transparent;}
+.kat-btn.active{border-color:var(--gruen);background:var(--gruen-bg);color:var(--gruen);}
+.del-btn{width:100%;padding:13px;border:none;border-radius:10px;background:#fff0f0;color:var(--rot);font-size:.9rem;font-weight:700;cursor:pointer;margin-top:8px;}
+.modal-close{width:100%;padding:13px;border:2px solid #eee;border-radius:10px;background:#fff;color:#555;font-size:.9rem;font-weight:700;cursor:pointer;margin-top:8px;}
+
+/* SUMMARY */
+.sum-section{display:none;padding:10px 10px 0;}
+.sum-section.active{display:block;}
+.sum-card{background:#fff;border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden;margin-bottom:12px;}
+.sum-title{background:var(--gruen);color:#fff;padding:9px 13px;font-size:.75rem;font-weight:800;text-transform:uppercase;letter-spacing:.5px;}
+.sum-row{display:flex;justify-content:space-between;align-items:center;padding:10px 13px;border-bottom:1px solid #f5f5f5;font-size:.85rem;}
+.sum-row:last-child{border-bottom:none;}
+.sum-row .sname{flex:1;}
+.sum-row .snr{font-size:.68rem;color:#bbb;display:block;}
+.sum-qty{font-weight:800;color:var(--gruen);font-size:1rem;}
+.sum-be{font-size:.75rem;color:#aaa;margin-left:3px;}
+.sum-empty{padding:24px;text-align:center;color:#bbb;font-size:.85rem;line-height:1.6;}
+.btn-row{display:flex;gap:8px;padding:0 10px 10px;}
+.btn{flex:1;height:46px;border:none;border-radius:var(--r);font-size:.86rem;font-weight:800;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:opacity .12s;}
+.btn:active{opacity:.75;}
+.btn-g{background:var(--gruen);color:#fff;}
+.btn-gray{background:#e2e2e2;color:#555;}
+.btn-red{background:var(--rot);color:#fff;}
+
+/* TOAST */
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(14px);background:#222;color:#fff;padding:9px 18px;border-radius:20px;font-size:.8rem;font-weight:700;opacity:0;transition:all .25s;pointer-events:none;z-index:1000;white-space:nowrap;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+<header>
+  <h1>🌿 Immergrün · Bestellung</h1>
+  <div class="meta" id="meta"></div>
+</header>
+<div class="tabs" id="tabs"></div>
+<div id="sections"></div>
+<div class="sum-section" id="sum-section">
+  <div id="sum-content"></div>
+  <div class="btn-row"><button class="btn btn-g" onclick="copyOrder()">📋 Bestellung kopieren</button></div>
+  <div class="btn-row">
+    <button class="btn btn-gray" onclick="resetLager()">Lager zurücksetzen</button>
+    <button class="btn btn-red" onclick="resetAll()">Alles löschen</button>
+  </div>
+</div>
+
+<!-- EDIT MODAL -->
+<div class="modal-bg" id="editModal">
+  <div class="modal">
+    <h3 id="modal-title">Artikel bearbeiten</h3>
+    <div class="modal-section">
+      <label>EINHEIT (Bestelleinheit)</label>
+      <div class="einheit-row" id="einheit-btns"></div>
+    </div>
+    <div class="modal-section">
+      <label>KATEGORIE VERSCHIEBEN</label>
+      <div class="kat-grid" id="kat-grid"></div>
+    </div>
+    <button class="del-btn" onclick="deleteArtikel()">🗑 Artikel löschen</button>
+    <button class="modal-close" onclick="closeModalDirect()">Fertig</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── DATA ──────────────────────────────────────────────────────────────────
+const KATEGORIEN = [
+  {id:'frisch', name:'🧀 Frisch'},
+  {id:'drinks', name:'🥛 Drinks'},
+  {id:'tk',     name:'❄️ TK'},
+  {id:'sirup',  name:'🍓 Sirup'},
+  {id:'dressings', name:'🫙 Dressings'},
+  {id:'trocken', name:'🌾 Trocken'},
+  {id:'summary', name:'📋 Bestellung'},
+];
+
+const EINHEITEN = ['EI','BT','KA','PG','FL','DS','KG','WA','SL','SK','BE'];
+
+const DEFAULT_ARTIKEL = [
+  {id:'f01',kat:'frisch',name:'Kräuterquark 40% 5kg',nr:'296953',be:'EI'},
+  {id:'f02',kat:'frisch',name:'Kräuterquark 40% 200g',nr:'657545',be:'BE'},
+  {id:'f03',kat:'frisch',name:'Frischkäse Natur 60% 1,5kg',nr:'459326',be:'EI'},
+  {id:'f04',kat:'frisch',name:'Gran Moravia gehobelt 500g',nr:'490163',be:'BT'},
+  {id:'f05',kat:'frisch',name:'Eier S gekocht 30St',nr:'103640',be:'KA'},
+  {id:'f06',kat:'frisch',name:'Hummus Classic frisch 1kg',nr:'96661',be:'BE'},
+  {id:'f07',kat:'frisch',name:'Basissauce Kartoffel 3kg',nr:'792707',be:'EI'},
+  {id:'d01',kat:'drinks',name:'Kokosdrink Barista 1l',nr:'363296',be:'PG'},
+  {id:'d02',kat:'drinks',name:'Mandeldrink ungesüßt 1l',nr:'386578',be:'PG'},
+  {id:'d03',kat:'drinks',name:'Haferdrink Barista 1l',nr:'464785',be:'PG'},
+  {id:'d04',kat:'drinks',name:'Kokosmilch 1L',nr:'73432',be:'PG'},
+  {id:'d05',kat:'drinks',name:'Apfelsaft Sonny 1l',nr:'331067',be:'PG'},
+  {id:'d06',kat:'drinks',name:'Mango-Maracuja-Nektar 1l',nr:'977955',be:'PG'},
+  {id:'d07',kat:'drinks',name:'Frappe weiß 1kg',nr:'737524',be:'DS'},
+  {id:'tk01',kat:'tk',name:'Erdbeersorbet TK 3,5kg',nr:'499105',be:'WA'},
+  {id:'tk02',kat:'tk',name:'Mangosorbet TK 3,5kg',nr:'499108',be:'WA'},
+  {id:'tk03',kat:'tk',name:'Joghurteis TK 3,5kg',nr:'499111',be:'WA'},
+  {id:'tk04',kat:'tk',name:'Drachenfruchtwürfel TK 2kg',nr:'148425',be:'BT'},
+  {id:'tk05',kat:'tk',name:'Mangostücke TK 2,5kg',nr:'217781',be:'BT'},
+  {id:'tk06',kat:'tk',name:'Ananas-Stücke TK 2,5kg',nr:'680',be:'BT'},
+  {id:'tk07',kat:'tk',name:'Avocadowürfel TK 1kg',nr:'574541',be:'BT'},
+  {id:'tk08',kat:'tk',name:'Edamame geschält TK 1kg',nr:'897494',be:'BT'},
+  {id:'tk09',kat:'tk',name:'Falafel TK 150x20g',nr:'390781',be:'KA'},
+  {id:'tk10',kat:'tk',name:'Bulgur-Köfte vegan TK',nr:'65601',be:'KG'},
+  {id:'tk11',kat:'tk',name:'Chicken Flakes gebraten TK 3kg',nr:'685245',be:'KG'},
+  {id:'tk12',kat:'tk',name:'Pulled Lachs geräuchert TK 500g',nr:'199713',be:'SL'},
+  {id:'tk13',kat:'tk',name:'Rotkohl eingelegt TK 1,5kg',nr:'810035',be:'BT'},
+  {id:'s01',kat:'sirup',name:'Teisseire Himbeere 0,7l',nr:'159711',be:'FL'},
+  {id:'s02',kat:'sirup',name:'Teisseire Caramel 0,7l',nr:'162268',be:'FL'},
+  {id:'s03',kat:'sirup',name:'Teisseire Hibiskus 0,7l',nr:'162700',be:'FL'},
+  {id:'s04',kat:'sirup',name:'Teisseire Maracuja 0,7l',nr:'194309',be:'FL'},
+  {id:'s05',kat:'sirup',name:'Teisseire Vanille 0,7l',nr:'66796',be:'FL'},
+  {id:'s06',kat:'sirup',name:'Teisseire Pistazie 0,7l',nr:'996945',be:'FL'},
+  {id:'s07',kat:'sirup',name:'Teisseire Rohrzucker 0,7l',nr:'936546',be:'FL'},
+  {id:'s08',kat:'sirup',name:'Eistee Sirup Pfirsich 0,7l',nr:'398736',be:'FL'},
+  {id:'s09',kat:'sirup',name:'Monin Cold Brew 0,7l',nr:'437432',be:'FL'},
+  {id:'s10',kat:'sirup',name:'Teisseire Pumpen 4St',nr:'18673',be:'BT'},
+  {id:'s11',kat:'sirup',name:'Espresso Arabica Bohne 1kg',nr:'380850',be:'BT'},
+  {id:'dr01',kat:'dressings',name:'Sesamdressing geröstet 4x875g',nr:'337578',be:'KA'},
+  {id:'dr02',kat:'dressings',name:'Dressing Sylter Art 4x875g',nr:'229977',be:'KA'},
+  {id:'dr03',kat:'dressings',name:'Caesar Dressing 4x875g',nr:'445497',be:'KA'},
+  {id:'dr04',kat:'dressings',name:'Zitronen Vinaigrette 4x875g',nr:'458752',be:'KA'},
+  {id:'dr05',kat:'dressings',name:'Teriyaki Sauce 4x875g',nr:'419515',be:'KA'},
+  {id:'dr06',kat:'dressings',name:'Chipotle Sauce 4x875g',nr:'397025',be:'KA'},
+  {id:'dr07',kat:'dressings',name:'Wild Karachi Vinaigrette 1l',nr:'345247',be:'FL'},
+  {id:'dr08',kat:'dressings',name:'Karamellsauce 1kg',nr:'379155',be:'FL'},
+  {id:'dr09',kat:'dressings',name:'Pistazien Topping 200g',nr:'434984',be:'FL'},
+  {id:'dr10',kat:'dressings',name:'Bio Agavendicksaft 340g',nr:'469271',be:'FL'},
+  {id:'dr11',kat:'dressings',name:'Blütenhonig goldklar 500g',nr:'447621',be:'FL'},
+  {id:'t01',kat:'trocken',name:'Jasmin Reis 20kg',nr:'358785',be:'SK'},
+  {id:'t02',kat:'trocken',name:'Bio Quinoa-Mischung 1kg',nr:'952717',be:'BT'},
+  {id:'t03',kat:'trocken',name:'Salatveredler Pinienkerne 500g',nr:'723701',be:'BT'},
+  {id:'t04',kat:'trocken',name:'Croutons Kräuter 500g',nr:'5913',be:'BT'},
+  {id:'t05',kat:'trocken',name:'Röstzwiebeln 500g',nr:'63102',be:'BT'},
+  {id:'t06',kat:'trocken',name:'Bio Datteln 500g',nr:'860659',be:'BT'},
+  {id:'t07',kat:'trocken',name:'Sesam schwarz 470ml',nr:'547178',be:'DS'},
+  {id:'t08',kat:'trocken',name:'Oreo Original 154g',nr:'451991',be:'PG'},
+];
+
+// ─── STATE ─────────────────────────────────────────────────────────────────
+const SK = 'immergruen_v4';
+function load() {
+  try { const s = localStorage.getItem(SK); return s ? JSON.parse(s) : null; }
+  catch { return null; }
+}
+function save() { try { localStorage.setItem(SK, JSON.stringify(appState)); } catch {} }
+
+let appState = load() || { artikel: JSON.parse(JSON.stringify(DEFAULT_ARTIKEL)), orders: {} };
+// migrate: ensure all default articles exist
+DEFAULT_ARTIKEL.forEach(def => {
+  if (!appState.artikel.find(a => a.id === def.id)) {
+    appState.artikel.push(JSON.parse(JSON.stringify(def)));
+  }
+});
+
+function getOrder(id) { return appState.orders[id] || {soll:null, lager:null}; }
+function setOrder(id, key, val) {
+  if (!appState.orders[id]) appState.orders[id] = {};
+  appState.orders[id][key] = val;
+  save();
+}
+function getBestell(id) {
+  const o = getOrder(id);
+  if (o.soll === null) return null;
+  return Math.max(0, o.soll - (o.lager !== null && o.lager !== undefined ? o.lager : 0));
+}
+
+let activeTab = 'frisch';
+let editingId = null;
+
+// ─── RENDER ────────────────────────────────────────────────────────────────
+function renderTabs() {
+  const el = document.getElementById('tabs');
+  el.innerHTML = '';
+  KATEGORIEN.forEach(k => {
+    const t = document.createElement('button');
+    t.type = 'button';
+    t.className = 'tab' + (k.id === activeTab ? ' active' : '');
+    if (k.id === 'summary') {
+      let n = 0;
+      appState.artikel.forEach(a => { const b = getBestell(a.id); if (b !== null && b > 0) n++; });
+      t.innerHTML = k.name + (n > 0 ? `<span class="badge">${n}</span>` : '');
+    } else {
+      t.textContent = k.name;
+    }
+    const tabId = k.id;
+    t.onclick = function() { activeTab = tabId; render(); };
+    el.appendChild(t);
+  });
+}
+
+function renderSections() {
+  const el = document.getElementById('sections');
+  el.innerHTML = '';
+  KATEGORIEN.filter(k => k.id !== 'summary').forEach(k => {
+    const sec = document.createElement('div');
+    sec.className = 'section' + (k.id === activeTab ? ' active' : '');
+    sec.id = 'sec-' + k.id;
+    const arts = appState.artikel.filter(a => a.kat === k.id);
+    arts.forEach(a => sec.appendChild(buildCard(a)));
+    el.appendChild(sec);
+  });
+
+  // summary
+  const sum = document.getElementById('sum-section');
+  sum.classList.toggle('active', activeTab === 'summary');
+  if (activeTab === 'summary') renderSummary();
+}
+
+function buildCard(art) {
+  const o = getOrder(art.id);
+  const b = getBestell(art.id);
+  const pillCls = b === null ? 'pill-none' : (b === 0 ? 'pill-warn' : 'pill-ok');
+  const pillTxt = b === null ? '?' : b;
+
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.id = 'card-' + art.id;
+
+  // card-head as real <button>
+  const head = document.createElement('button');
+  head.type = 'button';
+  head.className = 'card-head';
+  head.innerHTML = `
+    <div class="card-name">
+      <div class="name">${art.name}</div>
+      <div class="sub">Nr. ${art.nr} · ${art.be}</div>
+    </div>
+    <div class="order-pill ${pillCls}">${pillTxt}</div>
+    <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+      <polyline points="6 9 12 15 18 9"/>
+    </svg>`;
+  const artId = art.id;
+  head.onclick = function() { toggleCard(artId); };
+
+  // edit button separate, outside head
+  const editBtn = document.createElement('button');
+  editBtn.type = 'button';
+  editBtn.className = 'edit-btn';
+  editBtn.textContent = '⋯';
+  editBtn.onclick = function(e) { e.stopPropagation(); openEdit(e, artId); };
+
+  // wrap head + edit in a flex row
+  const headRow = document.createElement('div');
+  headRow.style.cssText = 'display:flex;align-items:center;';
+  headRow.appendChild(head);
+  headRow.appendChild(editBtn);
+
+  // card body
+  const body = document.createElement('div');
+  body.className = 'card-body';
+  body.innerHTML = `
+    <div class="row">
+      <div class="lbl">Soll</div>
+      <input class="inp" type="number" inputmode="numeric" min="0"
+        placeholder="Zielbestand"
+        value="${o.soll != null ? o.soll : ''}"
+        oninput="updateVal('${artId}','soll',this.value)">
+    </div>
+    <div class="hint">Wie viel brauchst du für ~3 Tage?</div>
+    <div class="row">
+      <div class="lbl">Lager</div>
+      <input class="inp" type="number" inputmode="numeric" min="0"
+        placeholder="Was liegt noch?"
+        value="${o.lager != null ? o.lager : ''}">
+      <button class="leer-btn" type="button" onclick="setLeer('${artId}')">Leer</button>
+    </div>
+    <div class="result-box">
+      <div class="result-left">
+        <div class="rl">Zu bestellen</div>
+        <div class="re">${art.be}</div>
+      </div>
+      <div class="result-num ${b === null || b === 0 ? 'zero' : ''}" id="rnum-${artId}">
+        ${b === null ? '—' : b}
+      </div>
+    </div>`;
+
+  // attach lager input listener directly
+  const lagerInp = body.querySelectorAll('.inp')[1];
+  lagerInp.oninput = function() { updateVal(artId, 'lager', this.value); };
+
+  card.appendChild(headRow);
+  card.appendChild(body);
+  return card;
+}
+
+function render() {
+  renderTabs();
+  renderSections();
+  updateMeta();
+}
+
+function renderSummary() {
+  const el = document.getElementById('sum-content');
+  let html = '';
+  KATEGORIEN.filter(k => k.id !== 'summary').forEach(k => {
+    const arts = appState.artikel.filter(a => a.kat === k.id);
+    const toOrder = arts.filter(a => { const b = getBestell(a.id); return b !== null && b > 0; });
+    if (!toOrder.length) return;
+    html += `<div class="sum-card"><div class="sum-title">${k.name}</div>`;
+    toOrder.forEach(a => {
+      const b = getBestell(a.id);
+      html += `<div class="sum-row">
+        <div class="sname">${a.name}<span class="snr">Nr. ${a.nr}</span></div>
+        <div><span class="sum-qty">${b}</span><span class="sum-be">${a.be}</span></div>
+      </div>`;
+    });
+    html += '</div>';
+  });
+  if (!html) html = '<div class="sum-card"><div class="sum-empty">Noch nichts eingetragen.<br>Soll + Lager bei den Artikeln eintragen.</div></div>';
+  el.innerHTML = html;
+}
+
+function updateMeta() {
+  const d = new Date();
+  const tage = ['So','Mo','Di','Mi','Do','Fr','Sa'];
+  let n = 0;
+  appState.artikel.forEach(a => { const b = getBestell(a.id); if (b !== null && b > 0) n++; });
+  document.getElementById('meta').textContent =
+    `${tage[d.getDay()]}, ${d.getDate()}.${d.getMonth()+1}.${d.getFullYear()} · ${n > 0 ? n + ' Artikel zu bestellen' : 'Alles ok ✓'}`;
+}
+
+// ─── INTERACTIONS ──────────────────────────────────────────────────────────
+function toggleCard(id) {
+  const c = document.getElementById('card-' + id);
+  const wasOpen = c.classList.contains('open');
+  document.querySelectorAll('.card.open').forEach(x => x.classList.remove('open'));
+  if (!wasOpen) c.classList.add('open');
+}
+
+function updateVal(id, key, raw) {
+  const v = raw === '' ? null : parseInt(raw, 10);
+  setOrder(id, key, isNaN(v) ? null : v);
+  refreshCard(id);
+  updateMeta();
+  renderTabs(); // update badge
+}
+
+function refreshCard(id) {
+  const b = getBestell(id);
+  const art = appState.artikel.find(a => a.id === id);
+  const pill = document.querySelector(`#card-${id} .order-pill`);
+  if (pill) {
+    pill.className = 'order-pill ' + (b === null ? 'pill-none' : (b === 0 ? 'pill-warn' : 'pill-ok'));
+    pill.textContent = b === null ? '?' : b;
+  }
+  const rnum = document.getElementById('rnum-' + id);
+  if (rnum) {
+    rnum.textContent = b === null ? '—' : b;
+    rnum.className = 'result-num' + (b === null || b === 0 ? ' zero' : '');
+  }
+  // update be label
+  if (art) {
+    const sub = document.querySelector(`#card-${id} .sub`);
+    if (sub) sub.textContent = `Nr. ${art.nr} · ${art.be}`;
+    const re = document.querySelector(`#card-${id} .re`);
+    if (re) re.textContent = art.be;
+  }
+}
+
+function setLeer(id) {
+  setOrder(id, 'lager', 0);
+  const inp = document.querySelectorAll(`#card-${id} .inp`)[1];
+  if (inp) inp.value = 0;
+  refreshCard(id);
+  updateMeta();
+  renderTabs();
+}
+
+// ─── EDIT MODAL ────────────────────────────────────────────────────────────
+function openEdit(e, id) {
+  e.stopPropagation();
+  editingId = id;
+  const art = appState.artikel.find(a => a.id === id);
+  document.getElementById('modal-title').textContent = art.name;
+
+  // einheit buttons
+  const eb = document.getElementById('einheit-btns');
+  eb.innerHTML = '';
+  EINHEITEN.forEach(u => {
+    const b = document.createElement('button');
+    b.className = 'e-btn' + (art.be === u ? ' active' : '');
+    b.textContent = u;
+    b.onclick = () => {
+      art.be = u;
+      save();
+      // update custom field
+      document.getElementById('custom-einheit').value = '';
+      eb.querySelectorAll('.e-btn').forEach(x => x.classList.toggle('active', x.textContent === u));
+      refreshCard(id);
+    };
+    eb.appendChild(b);
+  });
+  // custom einheit
+  const ci = document.createElement('input');
+  ci.id = 'custom-einheit';
+  ci.className = 'e-custom';
+  ci.placeholder = 'Eigene…';
+  ci.value = EINHEITEN.includes(art.be) ? '' : art.be;
+  ci.oninput = () => {
+    if (ci.value.trim()) {
+      art.be = ci.value.trim().toUpperCase();
+      save();
+      eb.querySelectorAll('.e-btn').forEach(x => x.classList.remove('active'));
+      refreshCard(id);
+    }
+  };
+  eb.appendChild(ci);
+
+  // kat buttons
+  const kg = document.getElementById('kat-grid');
+  kg.innerHTML = '';
+  KATEGORIEN.filter(k => k.id !== 'summary').forEach(k => {
+    const b = document.createElement('button');
+    b.className = 'kat-btn' + (art.kat === k.id ? ' active' : '');
+    b.textContent = k.name;
+    b.onclick = () => {
+      art.kat = k.id;
+      save();
+      kg.querySelectorAll('.kat-btn').forEach(x => x.classList.toggle('active', x.textContent === k.name));
+      toast('Verschoben nach ' + k.name);
+    };
+    kg.appendChild(b);
+  });
+
+  document.getElementById('editModal').classList.add('show');
+}
+
+function closeModal(e) {
+  if (e.target === document.getElementById('editModal')) closeModalDirect();
+}
+function closeModalDirect() {
+  document.getElementById('editModal').classList.remove('show');
+  if (editingId) { refreshCard(editingId); }
+  render();
+}
+
+function deleteArtikel() {
+  if (!editingId) return;
+  const art = appState.artikel.find(a => a.id === editingId);
+  if (!confirm(`"${art.name}" wirklich löschen?`)) return;
+  appState.artikel = appState.artikel.filter(a => a.id !== editingId);
+  delete appState.orders[editingId];
+  save();
+  closeModalDirect();
+  toast('Artikel gelöscht');
+}
+
+// ─── COPY ──────────────────────────────────────────────────────────────────
+function copyOrder() {
+  const d = new Date();
+  let txt = `TRANSGOURMET BESTELLUNG – IMMERGRÜN\n${d.toLocaleDateString('de-DE')}\n${'─'.repeat(35)}\n`;
+  let has = false;
+  KATEGORIEN.filter(k => k.id !== 'summary').forEach(k => {
+    const arts = appState.artikel.filter(a => a.kat === k.id);
+    const toOrder = arts.filter(a => { const b = getBestell(a.id); return b !== null && b > 0; });
+    if (!toOrder.length) return;
+    has = true;
+    txt += `\n${k.name.replace(/[^\w äöüÄÖÜß]/g,'').trim().toUpperCase()}\n`;
+    toOrder.forEach(a => {
+      txt += `  ${a.nr}  ${a.name}  →  ${getBestell(a.id)} ${a.be}\n`;
+    });
+  });
+  if (!has) { toast('Nichts zu bestellen'); return; }
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(txt).then(() => toast('✓ Kopiert!'));
+  } else {
+    const ta = document.createElement('textarea');
+    ta.value = txt; document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta);
+    toast('✓ Kopiert!');
+  }
+}
+
+function resetLager() {
+  if (!confirm('Alle Lagerbestände auf leer setzen?')) return;
+  Object.keys(appState.orders).forEach(id => { if (appState.orders[id]) appState.orders[id].lager = null; });
+  save(); render(); toast('Lager zurückgesetzt');
+}
+function resetAll() {
+  if (!confirm('Wirklich alles löschen? Alle Soll-Werte, Lager und Einstellungen werden zurückgesetzt.')) return;
+  appState = { artikel: JSON.parse(JSON.stringify(DEFAULT_ARTIKEL)), orders: {} };
+  save(); render(); toast('Zurückgesetzt');
+}
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// ─── INIT ──────────────────────────────────────────────────────────────────
+function showError(msg) {
+  document.body.innerHTML = '<div style="padding:20px;font-family:monospace;font-size:13px;background:#fff;color:#c00;white-space:pre-wrap;word-break:break-all;">' + msg + '</div>';
+}
+
+window.onerror = function(msg, src, line, col, err) {
+  showError('JS ERROR:\n' + msg + '\nLine: ' + line + '\n' + (err ? err.stack : ''));
+};
+
+function init() {
+  try {
+    render();
+  } catch(e) {
+    try { localStorage.removeItem(SK); } catch(e2) {}
+    try {
+      appState = { artikel: JSON.parse(JSON.stringify(DEFAULT_ARTIKEL)), orders: {} };
+      render();
+    } catch(e3) {
+      showError('RENDER ERROR:\n' + e3.toString() + '\n\nFirst error:\n' + e.toString());
+    }
+  }
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  init();
+}
+</script>
+</body>
+</html>
